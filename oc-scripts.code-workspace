@@ -1,0 +1,21 @@
+{
+	"folders": [
+		{
+			"path": "."
+		}
+	],
+	"settings": {
+		"Lua.diagnostics.globals": [
+			"computer",
+			"checkArg",
+			"component",
+			"unicode",
+			"bit32",
+			"drone"
+		],
+		"Lua.diagnostics.disable": [
+			"ambiguity-1",
+			"lowercase-global"
+		]
+	}
+}
