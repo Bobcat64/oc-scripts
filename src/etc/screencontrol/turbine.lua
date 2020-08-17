@@ -2,15 +2,17 @@ local prefix = require("prefixunit")
 local component = require('component')
 
 local function handle(settings)
-    local addr = component.get(settings.addr, "nc_turbine")
     local t
-    if addr then
+    if settings.addr then
+        local addr = component.get(settings.addr, "nc_turbine") 
+        if not addr then
+            return "Turbine Component Not Found", 0xFF0000
+        end
         t = component.proxy(addr)
-    else    
+    else
         if not component.isAvailable("nc_turbine") then
             return "Turbine Component Not Found", 0xFF0000
         end
-
         t = component.getPrimary("nc_turbine")
     end
 
@@ -42,7 +44,7 @@ function update(screen, tag, settings)
         clr = 0xFFFFFF
     end
 
-    if settings.lastCall > 5 or settings.lastVal ~= txt or settings.lastClr ~= clr then
+    if (settings.lastCall or 0) > 5 or settings.lastVal ~= txt or settings.lastClr ~= clr then
         screen.setText(tag, txt, clr)
         settings.lastVal, settings.lastClr = txt, clr
         settings.lastCall = 0

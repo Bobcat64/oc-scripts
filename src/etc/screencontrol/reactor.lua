@@ -1,9 +1,12 @@
 local component = require('component')
 
 local function handle(settings)
-    local addr = component.get(settings.addr, "nc_salt_fission_reactor")
     local r
-    if addr then
+    if settings.addr then 
+        local addr = component.get(settings.addr, "nc_salt_fission_reactor") 
+        if not addr then
+            return "Reactor Component not Found", 0xFF0000
+        end
         r = component.proxy(addr)
     else
         if not component.isAvailable("nc_salt_fission_reactor") then
@@ -23,15 +26,15 @@ local function handle(settings)
     local heat = r.getRawHeatingRate()
     local cool = r.getCoolingRate()
     local clr = 0x00FF00
-    local status = "On"
-    if heat > cool then
+    local status = "On"    
+    local net = heat - cool
+    if net > 0 then
         clr = 0xFF0000
         status = "HOT!"
-    elseif (cool + 10) < heat then --handle grace zone
+    elseif (net + 10) < 0 then --handle grace zone
         clr = 0x0099FF
         status = "Cold"
     end
-    local net = heat - cool
 
     return string.format("Reactor %s %+d heat", status, net), clr
 end
@@ -43,7 +46,7 @@ function update(screen, tag, settings)
         clr = 0xFFFFFF
     end
 
-    if settings.lastCall > 5 or settings.lastVal ~= txt or settings.lastClr ~= clr then
+    if (settings.lastCall or 0) or settings.lastVal ~= txt or settings.lastClr ~= clr then
         screen.setText(tag, txt, clr)
         settings.lastVal, settings.lastClr = txt, clr
         settings.lastCall = 0
