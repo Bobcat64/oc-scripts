@@ -82,6 +82,7 @@ local function setupTimer(tag, hconf)
         local scr = nil
         if (cfg.screenAddress) then
             scr = component.get(cfg.screenAddress, "screen_controller")
+            if scr then scr = component.proxy(scr) end
         elseif component.isAvailable("screen_controller") then
             scr = component.getPrimary("screen_controller")
         end
@@ -94,6 +95,7 @@ local function setupTimer(tag, hconf)
             end
             return
         end
+        foundScreen=true
         hndlr.update(scr, tag, tagconf)
     end
 
@@ -117,11 +119,10 @@ end
 
 function start()
     shutdown()
-    cfg = conf.loadConfig(CFG_FNAME, {sides=sides, colors=colors})
+    
+    cfg = conf.loadConfig(CFG_FNAME, setmetatable({}, {__index={sides=sides, colors=colors}}))
     cfg = cfg or {}
     --unload convienence tables
-    cfg.sides=nil
-    cfg.colors=nil
 
     if cfg.path == nil then cfg.path = '/etc/screencontrol' end
     if cfg.defaultInterval == nil then cfg.defaultInterval = 1 end
