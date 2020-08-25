@@ -3,7 +3,7 @@ local component = require('component')
 local function handle(settings)
     local r
     if settings.addr then 
-        local addr = component.get(settings.addr, "nc_salt_fission_reactor") 
+        local addr = component.get(settings.addr, "nc_salt_fission_reactor")
         if not addr then
             return "Reactor Component not Found", 0xFF0000
         end
@@ -26,7 +26,7 @@ local function handle(settings)
     local heat = r.getRawHeatingRate()
     local cool = r.getCoolingRate()
     local clr = 0x00FF00
-    local status = "On"    
+    local status = "On"
     local net = heat - cool
     if net > 0 then
         clr = 0xFF0000

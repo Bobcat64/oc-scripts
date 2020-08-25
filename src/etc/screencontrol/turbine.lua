@@ -4,7 +4,7 @@ local component = require('component')
 local function handle(settings)
     local t
     if settings.addr then
-        local addr = component.get(settings.addr, "nc_turbine") 
+        local addr = component.get(settings.addr, "nc_turbine")
         if not addr then
             return "Turbine Component Not Found", 0xFF0000
         end
