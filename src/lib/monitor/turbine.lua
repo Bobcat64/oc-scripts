@@ -6,8 +6,8 @@ local component = require('component')
 
 local function raiseChangeEvent(monitor)
     event.push('turbine_change', monitor.name or monitor.address, monitor.state)
-    monitor.state._lastInputRate = monitor.state.inputRate
-    monitor.state._lastPower = monitor.state.power
+    monitor._lastInputRate = monitor.state.inputRate
+    monitor._lastPower = monitor.state.power
 end
 
 local function significantChange(cur, orig)
@@ -58,11 +58,11 @@ function monCls:update()
     state.isComplete = val
 
     val = t.getInputRate()
-    didChange = didChange or significantChange(state._lastInputRate, val)
+    didChange = didChange or significantChange(self._lastInputRate, val)
     state.inputRate = val
 
     val = t.getPower()
-    didChange = didChange or significantChange(state._lastPower, val)
+    didChange = didChange or significantChange(self._lastPower, val)
     state.power = val
 
     self.state = state

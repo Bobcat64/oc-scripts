@@ -6,7 +6,7 @@ local component = require('component')
 
 local function raiseChangeEvent(monitor)
     event.push('geiger_change', monitor.name or monitor.address, monitor.state)
-    monitor.state._lastRadiation = monitor.state.radiation --set the last alerted about radiation level
+    monitor._lastRadiation = monitor.state.radiation --set the last alerted about radiation level
 end
 
 local function significantChange(cur, orig)
@@ -45,7 +45,7 @@ function monCls:update()
     local state = self.state or {}
 
     local val = g.getChunkRadiationLevel()
-    local didChange = significantChange(state._lastRadiation, val)
+    local didChange = significantChange(self._lastRadiation, val)
     state.radiation = val
 
     self.state = state
