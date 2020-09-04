@@ -10,7 +10,9 @@ local CFG_FNAME = '/etc/screencontrol.cfg'
 
 local cfg
 local scripts
-local timers
+local handlers
+--local handlerSettings
+--local timers
 
 local function shutdown()
     local wasRunning = false
@@ -23,7 +25,16 @@ local function shutdown()
         end
     end
     timers = nil
-    scripts = nil --Probably should have a shutdown function to call for each handler
+    if handlers then
+        for tag, hndlr in pairs(handlers) do
+            if type(hndlr.shutdown) == 'function' then
+                pcall(hndlr.shutdown(tag, hndlr.settings))
+            end
+            hndlr.settings = nil
+        end
+    end
+    handlers = nil
+    scripts = nil
     return wasRunning
 end
 
@@ -60,24 +71,10 @@ end
 
 local foundScreen =true
 
-local function setupTimer(tag, hconf)
-    if timers[tag] ~= nil then return end
-    if not hconf then 
-        io.stderr:write('Handler "' .. tag .. '" has no configuration\n')
-        return
-    end
+local function setupTimer(tag, hndlr)
+    if hndlr.enabled == false then return end
+    if hndlr.timer ~= nil then return end
     
-    local hndlr = loadScript(hconf)
-    if not hndlr then --loadScript should write an appropriate error        
-        return
-    end
-    if type(hndlr.update) ~= 'function' then
-        io.stderr:write('Handler "' .. tag .. '" does not define an update function')
-        return
-    end
-
-    local tagconf = setmetatable({}, {__index=hconf})
-
     local function timerHandler()        
         local scr = nil
         if (cfg.screenAddress) then
@@ -96,16 +93,42 @@ local function setupTimer(tag, hconf)
             return
         end
         foundScreen=true
-        hndlr.update(scr, tag, tagconf)
+        hndlr.lib.update(scr, tag, hndlr.settings)
     end
 
-    timers[tag] = event.timer(hconf.interval or cfg.defaultInterval, timerHandler, math.huge)
+    hndlr.timer = event.timer(hndlr.settings.interval or cfg.defaultInterval, timerHandler, math.huge)
+    return 
+end
+
+local function setupHandler(tag, hconf)
+    if type(handlers[tag]) == 'table' then return handlers[tag] end
+    local hndlr = loadScript(hconf)
+    if not hndlr then --loadScript should write an appropriate error        
+        return nil
+    end
+    if type(hndlr.update) ~= 'function' then
+        io.stderr:write('Handler "' .. tag .. '" does not define an update function')
+        return nil
+    end
+    local settings = setmetatable({}, {__index=hconf})
+    if type(hndlr.setup) == 'function' then
+        local s, err = pcall(hndlr.setup, tag, settings)
+        if not s then
+            io.stderr:write('Error setting up handler: ' .. err)
+            return nil --don't do anything further
+        end
+    end
+    handlers[tag] = {lib = hndlr, settings=settings}
+    return hndlr
 end
 
 --TODO: Have a global timer that refreshes a list of tags the controller has and load only the scripts when needed
 local function setupHandlers()
     for tag, hconf in pairs(cfg.handlers) do
-        setupTimer(tag, hconf)
+        local hndlr = setupHandler(tag, hconf)
+        if hndlr then
+            setupTimer(tag, hndlr)
+        end
     end
 end
 
@@ -131,8 +154,8 @@ function start()
         io.stderr:write('ScreenControl: Warning - No handlers defined\n')
         cfg.handlers = {}
     end
-    timers={}
     scripts = {}
+    handlers = {}
     foundScreen = true --assume we found the screen so we print an error if we don't find it later
     setupHandlers()
 
